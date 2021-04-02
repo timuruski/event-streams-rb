@@ -4,27 +4,38 @@
 # Subscription -> Handler + Topic
 
 at_exit do
+  alice_enters = Event.new("Alice enters")
+  alice_leaves = Event.new("Alice leaves")
+  bob_enters = Event.new("Bob enters")
+  bob_leaves = Event.new("Bob leaves")
+  alice_greets_bob = Event.new("Alice greets Bob")
+
+  stream = EventStream.new
+  stream.publish_each(alice_enters, bob_enters, alice_greets_bob, bob_leaves, alice_leaves)
+
   handler_a = EventHandler.new { |event| puts "A: #{event.data}" }
   handler_b = EventHandler.new { |event| puts "B: #{event.data}" }
 
-  stream = EventStream.new
-  stream.subscribe(handler_a)
+  subscription_a = stream.subscribe(handler_a)
+  subscription_b = stream.subscribe(handler_b)
 
-  alice_enters = Event.new("Alice enters")
-  bob_enters = Event.new("Bob enters")
-  bob_leaves = Event.new("Bob leaves")
-  alice_leaves = Event.new("Alice leaves")
-
-  stream.publish_each(alice_enters, bob_enters, bob_leaves, alice_leaves)
-
-  stream.subscribe(handler_b, last_event: bob_enters)
+  subscription_a.play_all
+  subscription_b.play_after(bob_enters)
 end
 
 class EventStream
   def initialize
-    @handlers = []
+    @subscriptions = []
     @published_events = {}
     @ordered_events = []
+  end
+
+
+  def subscribe(handler, last_event: nil)
+    subscription = Subscription.new(stream: self, handler: handler)
+    @subscriptions.push(subscription)
+
+    subscription
   end
 
   def publish_each(*events)
@@ -37,23 +48,24 @@ class EventStream
     @published_events[event.id] = @ordered_events.length
     @ordered_events.push(event)
 
-    @handlers.each do |handler|
-      handler.handle(event)
+    @subscriptions.each do |subscription|
+      subscription.deliver(event)
     end
 
     event
   end
 
-  def subscribe(handler, last_event: nil)
-    @handlers.push(handler)
+  def each
+    @ordered_events.each do |event|
+      yield event
+    end
+  end
 
-    if last_event
-      starting_index = @published_events[last_event.id] + 1
-      missing_events = @ordered_events.slice(starting_index..).to_a
-
-      missing_events.each do |event|
-        handler.handle(event)
-      end
+  def each_after(last_event)
+    starting_index = @published_events[last_event.id] + 1
+    missing_events = @ordered_events.slice(starting_index..)
+    missing_events.each do |event|
+      yield event
     end
   end
 end
@@ -76,5 +88,30 @@ class EventHandler
 
   def handle(event)
     @handler.call(event)
+  end
+end
+
+class Subscription
+  attr_reader :handler, :stream
+
+  def initialize(handler:, stream:)
+    @handler = handler
+    @stream = stream
+  end
+
+  def deliver(event)
+    @handler.handle(event)
+  end
+
+  def play_after(last_event)
+    @stream.each_after(last_event) do |event|
+      deliver(event)
+    end
+  end
+
+  def play_all
+    @stream.each do |event|
+      deliver(event)
+    end
   end
 end
