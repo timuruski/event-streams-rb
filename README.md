@@ -8,6 +8,7 @@ Stream, linear sequence of events, handles de-duplication.
 
 Topic, selects a subset of events, handles subscribing and publishing.
 Is the label part of the event or separate?
+What does it mean to publish an event to the "all events" topic?
 How to handle aggregate topics though? Subscribing merges events, but how does publishing work?
 Are events published multiple times? The topic labels are preserved in the stream.
 
