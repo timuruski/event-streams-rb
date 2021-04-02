@@ -4,23 +4,25 @@
 # Subscription -> Handler + Topic
 
 at_exit do
+  alice_greets_bob = Event.new("Alice greets Bob")
   alice_enters = Event.new("Alice enters")
   alice_leaves = Event.new("Alice leaves")
   bob_enters = Event.new("Bob enters")
   bob_leaves = Event.new("Bob leaves")
-  alice_greets_bob = Event.new("Alice greets Bob")
 
   stream = EventStream.new
-  stream.publish_each(alice_enters, bob_enters, alice_greets_bob, bob_leaves, alice_leaves)
+  stream.publish_each(alice_enters, bob_enters)
 
   handler_a = EventHandler.new { |event| puts "A: #{event.data}" }
   handler_b = EventHandler.new { |event| puts "B: #{event.data}" }
+  handler_c = EventHandler.new { |event| puts "C: #{event.data}" }
 
-  subscription_a = stream.subscribe(handler_a)
-  subscription_b = stream.subscribe(handler_b)
+  stream.subscribe!(handler_a, last_event: nil)
+  stream.subscribe!(handler_b, last_event: alice_enters).unsubscribe
+  stream.subscribe!(handler_c)
 
-  subscription_a.play_all
-  subscription_b.play_after(bob_enters)
+  stream.publish_each(alice_greets_bob, bob_leaves, alice_leaves)
+  stream.publish Event.new("End of scene")
 end
 
 class EventStream
@@ -30,12 +32,25 @@ class EventStream
     @ordered_events = []
   end
 
-
   def subscribe(handler, last_event: nil)
     subscription = Subscription.new(stream: self, handler: handler)
     @subscriptions.push(subscription)
 
     subscription
+  end
+
+  def unsubscribe(subscription)
+    @subscriptions.delete(subscription)
+  end
+
+  def subscribe!(handler, last_event: nil)
+    subscription = subscribe(handler)
+
+    if last_event
+      subscription.play_after(last_event)
+    else
+      subscription.play_all
+    end
   end
 
   def publish_each(*events)
@@ -101,17 +116,27 @@ class Subscription
 
   def deliver(event)
     @handler.handle(event)
+
+    self
   end
 
   def play_after(last_event)
     @stream.each_after(last_event) do |event|
       deliver(event)
     end
+
+    self
   end
 
   def play_all
     @stream.each do |event|
       deliver(event)
     end
+
+    self
+  end
+
+  def unsubscribe
+    @stream.unsubscribe(self)
   end
 end
