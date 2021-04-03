@@ -8,17 +8,13 @@ at_exit do
   alice_events = EventStream.new(event_bus, topic: "alice")
   bob_events = EventStream.new(event_bus, topic: "bob")
 
-  alice_greets_bob = Event.new("Alice greets Bob")
-  alice_enters = Event.new("Alice enters")
-  alice_leaves = Event.new("Alice leaves")
-  bob_enters = Event.new("Bob enters")
-  bob_leaves = Event.new("Bob leaves")
+  all_events.publish Event.new("Start of scene")
 
-  alice_events.publish(alice_enters)
-  bob_events.publish(bob_enters)
-  alice_events.publish(alice_greets_bob, topic: "bob") # Two-topics
-  bob_events.publish(bob_leaves)
-  alice_events.publish(alice_leaves)
+  alice_events.publish Event.new("Alice enters")
+  bob_events.publish Event.new("Bob enters")
+  alice_events.publish Event.new("Alice greets Bob"), include_topic: "bob"
+  bob_events.publish Event.new("Bob leaves")
+  alice_events.publish Event.new("Alice leaves")
 
   handler_a = EventHandler.new { |event| puts Ansi["A: #{event.data}", :fg_red] }
   handler_b = EventHandler.new { |event| puts Ansi["B: #{event.data}", :fg_green] }

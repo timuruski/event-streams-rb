@@ -30,15 +30,15 @@ class EventStream
     @subscriptions.delete(subscription)
   end
 
-  def publish_each(*events, topic: nil)
+  def publish_each(*events, include_topic: nil)
     events.each do |event|
-      publish(event, topic: topic)
+      publish(event, include_topic: include_topic)
     end
   end
 
-  def publish(event, topic: nil)
+  def publish(event, include_topic: nil)
     # TODO Make "no topic" a real concept
-    all_topics = [*@topic, *topic]
+    all_topics = [*@topic, *include_topic]
     all_topics = [nil] if all_topics.empty?
 
     @event_bus.publish(event, topics: all_topics)
