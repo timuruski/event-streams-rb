@@ -16,7 +16,11 @@ def ansi(str, *elements)
 end
 
 at_exit do
-  stream = EventStream.new
+  event_bus = EventBus.new
+
+  all_events = EventStream.new(event_bus)
+  alice_events = EventStream.new(event_bus, topic: "alice")
+  bob_events = EventStream.new(event_bus, topic: "bob")
 
   alice_greets_bob = Event.new("Alice greets Bob")
   alice_enters = Event.new("Alice enters")
@@ -24,20 +28,20 @@ at_exit do
   bob_enters = Event.new("Bob enters")
   bob_leaves = Event.new("Bob leaves")
 
-  all_events = Topic.new(stream)
-  all_events.publish_each(alice_enters, bob_enters)
-  all_events.publish_each(alice_greets_bob, alice_greets_bob) # De-duplicates
-  all_events.publish_each(bob_leaves, alice_leaves)
+  alice_events.publish(alice_enters)
+  bob_events.publish(bob_enters)
+  alice_events.publish(alice_greets_bob, topic: "bob") # Two-topics
+  bob_events.publish(bob_leaves)
+  alice_events.publish(alice_leaves)
 
   handler_a = EventHandler.new { |event| puts ansi("A: #{event.data}", :fg_red) }
-  handler_b = EventHandler.new { |event| puts ansi("B: #{event.data}", :fg_blue) }
-  handler_c = EventHandler.new { |event| puts ansi("C: #{event.data}", :fg_green) }
+  handler_b = EventHandler.new { |event| puts ansi("B: #{event.data}", :fg_green) }
+  handler_c = EventHandler.new { |event| puts ansi("C: #{event.data}", :fg_blue) }
 
-  all_events.subscribe!(handler_a, last_event: nil)
-  all_events.subscribe!(handler_b, last_event: bob_enters).unsubscribe
-  all_events.subscribe(handler_c)
+  alice_events.subscribe!(handler_a)
+  bob_events.subscribe!(handler_b)
+  all_events.subscribe!(handler_c)
 
-  all_events.publish_each(alice_greets_bob, bob_leaves, alice_leaves)
   all_events.publish Event.new("End of scene")
 end
 
@@ -50,70 +54,76 @@ class Event
     @id = Event::ID_GENERATOR.next
     @data = data
   end
+
+  def to_s
+    @data.to_s
+  end
 end
 
-class EventStream
+class EventBus
   def initialize
-    @listeners = []
     @published_events = {}
     @ordered_events = []
+    @topics = {}
   end
 
-  def subscribe(listener)
-    @listeners.push(listener)
+  def subscribe(listener, topic: nil)
+    @topics[topic] ||= []
+    @topics[topic] << listener
   end
 
   def unsubscribe(listener)
-    @listeners.delete(listener)
+    @topics.values.each do |listeners|
+      listeners.delete(listener)
+    end
   end
 
-  def publish(event)
-    return event if @published_events[event.id]
+  def publish(event, topics:)
+    return event if @published_events.key?(event.id)
 
     @published_events[event.id] = @ordered_events.length
-    @ordered_events.push(event)
+    @ordered_events << [event, topics]
 
-    @listeners.each do |listener|
-      listener.deliver(event)
+    # TODO Make "no-topic" a real concept
+    topics = [nil] if topics.empty?
+
+    topics.each do |topic|
+      @topics[topic].each do |listener|
+        listener.deliver(event, topic)
+      end
     end
 
     event
   end
 
   def each
-    @ordered_events.each do |event|
-      yield event
+    @ordered_events.each do |event, topics|
+      topics.each do |topic|
+        yield event, topic
+      end
     end
   end
 
   def each_after(last_event)
     starting_index = @published_events[last_event.id] + 1
     missing_events = @ordered_events.slice(starting_index..)
-    missing_events.each do |event|
-      yield event
+    missing_events.each do |event, topics|
+      topics.each do |topic|
+        yield event, topic
+      end
     end
   end
 end
 
-class Topic
-  attr_reader :stream
+class EventStream
+  attr_reader :event_bus, :topic
 
-  def initialize(stream)
-    @stream = stream
+  def initialize(event_bus, topic: nil)
+    @event_bus = event_bus
     @subscriptions = []
+    @topic = topic
 
-    @stream.subscribe(self)
-  end
-
-  def subscribe(handler, last_event: nil)
-    subscription = Subscription.new(topic: self, handler: handler)
-    @subscriptions.push(subscription)
-
-    subscription
-  end
-
-  def unsubscribe(subscription)
-    @subscriptions.delete(subscription)
+    @event_bus.subscribe(self, topic: @topic)
   end
 
   def subscribe!(handler, last_event: nil)
@@ -126,31 +136,45 @@ class Topic
     end
   end
 
-  def publish_each(*events)
+  def subscribe(handler, last_event: nil)
+    subscription = Subscription.new(handler: handler, stream: self)
+    @subscriptions.push(subscription)
+
+    subscription
+  end
+
+  def unsubscribe(subscription)
+    @subscriptions.delete(subscription)
+  end
+
+  def publish_each(*events, topic: nil)
     events.each do |event|
-      publish(event)
+      publish(event, topic: topic)
     end
   end
 
-  def publish(event)
-    @stream.publish(event)
+  def publish(event, topic: nil)
+    all_topics = [*@topic, *topic]
+    @event_bus.publish(event, topics: all_topics)
 
     event
   end
 
   def each
-    @stream.each do |event|
-      yield event
+    @event_bus.each do |event, topic|
+      yield event if @topic.nil? || topic == @topic
     end
   end
 
   def each_after(last_event)
-    @stream.each_after(last_event) do |event|
-      yield event
+    @event_bus.each_after(last_event) do |event, topic|
+      yield event if @topic.nil? || topic == @topic
     end
   end
 
-  def deliver(event)
+  def deliver(event, topic)
+    return unless topic == @topic
+
     @subscriptions.each do |subscription|
       subscription.deliver(event)
     end
@@ -158,11 +182,11 @@ class Topic
 end
 
 class Subscription
-  attr_reader :handler, :topic
+  attr_reader :handler, :stream
 
-  def initialize(handler:, topic:)
+  def initialize(handler:, stream:)
     @handler = handler
-    @topic = topic
+    @stream = stream
   end
 
   def deliver(event)
@@ -172,7 +196,7 @@ class Subscription
   end
 
   def play_after(last_event)
-    @topic.each_after(last_event) do |event|
+    @stream.each_after(last_event) do |event|
       deliver(event)
     end
 
@@ -180,7 +204,7 @@ class Subscription
   end
 
   def play_all
-    @topic.each do |event|
+    @stream.each do |event|
       deliver(event)
     end
 
@@ -188,7 +212,7 @@ class Subscription
   end
 
   def unsubscribe
-    @topic.unsubscribe(self)
+    @stream.unsubscribe(self)
   end
 end
 
