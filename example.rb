@@ -20,9 +20,9 @@ at_exit do
   bob_events.publish(bob_leaves)
   alice_events.publish(alice_leaves)
 
-  handler_a = EventHandler.new { |event| puts ansi("A: #{event.data}", :fg_red) }
-  handler_b = EventHandler.new { |event| puts ansi("B: #{event.data}", :fg_green) }
-  handler_c = EventHandler.new { |event| puts ansi("C: #{event.data}", :fg_blue) }
+  handler_a = EventHandler.new { |event| puts Ansi["A: #{event.data}", :fg_red] }
+  handler_b = EventHandler.new { |event| puts Ansi["B: #{event.data}", :fg_green] }
+  handler_c = EventHandler.new { |event| puts Ansi["C: #{event.data}", :fg_blue] }
 
   alice_events.subscribe!(handler_a)
   bob_events.subscribe!(handler_b)
