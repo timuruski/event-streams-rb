@@ -30,39 +30,32 @@ class EventStream
     @subscriptions.delete(subscription)
   end
 
-  def publish_each(*events, include_topic: nil)
-    events.each do |event|
-      publish(event, include_topic: include_topic)
-    end
-  end
-
-  def publish(event, include_topic: nil)
-    # TODO Make "no topic" a real concept
-    all_topics = [*@topic, *include_topic]
-    all_topics = [nil] if all_topics.empty?
-
-    @event_bus.publish(event, topics: all_topics)
-
-    event
-  end
-
   def deliver(event, topic)
-    return unless topic == @topic
+    return unless topic_match?(topic)
 
     @subscriptions.each do |subscription|
       subscription.deliver(event)
     end
   end
 
+  # TODO Implement include_topic, and expansion
+  def publish(event, topic:)
+    @event_bus.publish(event, topic: topic)
+  end
+
   def each
     @event_bus.each do |event, topic|
-      yield event if @topic.nil? || topic == @topic
+      yield event if topic_match?(topic)
     end
   end
 
   def each_after(last_event)
     @event_bus.each_after(last_event) do |event, topic|
-      yield event if @topic.nil? || topic == @topic
+      yield event if topic_match?(topic)
     end
+  end
+
+  private def topic_match?(topic)
+    @topic.nil? || topic.start_with?(@topic.chomp("*"))
   end
 end
