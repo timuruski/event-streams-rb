@@ -2,18 +2,15 @@ class EventBus
   def initialize
     @published_events = {}
     @ordered_events = []
-    @topics = {}
+    @listeners = []
   end
 
-  def subscribe(listener, topic: nil)
-    @topics[topic] ||= []
-    @topics[topic] << listener
+  def subscribe(listener)
+    @listeners << listener
   end
 
   def unsubscribe(listener)
-    @topics.values.each do |listeners|
-      listeners.delete(listener)
-    end
+    @listeners.delete(listener)
   end
 
   def publish(event, topics:)
@@ -22,11 +19,8 @@ class EventBus
     @published_events[event.id] = @ordered_events.length
     @ordered_events << [event, topics]
 
-    # TODO Make "no-topic" a real concept
-    topics = [nil] if topics.empty?
-
     topics.each do |topic|
-      @topics[topic].each do |listener|
+      @listeners.each do |listener|
         listener.deliver(event, topic)
       end
     end

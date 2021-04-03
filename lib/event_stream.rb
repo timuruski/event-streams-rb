@@ -6,7 +6,7 @@ class EventStream
     @subscriptions = []
     @topic = topic
 
-    @event_bus.subscribe(self, topic: @topic)
+    @event_bus.subscribe(self)
   end
 
   def subscribe!(handler, last_event: nil)
@@ -37,10 +37,21 @@ class EventStream
   end
 
   def publish(event, topic: nil)
+    # TODO Make "no topic" a real concept
     all_topics = [*@topic, *topic]
+    all_topics = [nil] if all_topics.empty?
+
     @event_bus.publish(event, topics: all_topics)
 
     event
+  end
+
+  def deliver(event, topic)
+    return unless topic == @topic
+
+    @subscriptions.each do |subscription|
+      subscription.deliver(event)
+    end
   end
 
   def each
@@ -52,14 +63,6 @@ class EventStream
   def each_after(last_event)
     @event_bus.each_after(last_event) do |event, topic|
       yield event if @topic.nil? || topic == @topic
-    end
-  end
-
-  def deliver(event, topic)
-    return unless topic == @topic
-
-    @subscriptions.each do |subscription|
-      subscription.deliver(event)
     end
   end
 end
