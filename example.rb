@@ -17,10 +17,10 @@ event_bus.publish(Event.new("Midpoint of the scene"), topic: "scene")
 event_bus.publish(Event.new("Alice leaves"), topic: "person:alice")
 event_bus.publish(Event.new("Bob leaves"), topic: "person:bob")
 
-handler_a = EventHandler.new { |event| puts Ansi["A: #{event.data}", :fg_red] }
-handler_b = EventHandler.new { |event| puts Ansi["B: #{event.data}", :fg_green] }
-handler_c = EventHandler.new { |event| puts Ansi["C: #{event.data}", :fg_blue] }
-handler_d = EventHandler.new { |event| puts Ansi["D: #{event.data}"] }
+handler_a = SimpleHandler.new { |event| puts Ansi["A: #{event.data}", :fg_red] }
+handler_b = SimpleHandler.new { |event| puts Ansi["B: #{event.data}", :fg_green] }
+handler_c = SimpleHandler.new { |event| puts Ansi["C: #{event.data}", :fg_blue] }
+handler_d = SimpleHandler.new { |event| puts Ansi["D: #{event.data}"] }
 
 alice_events.subscribe!(handler_a)
 bob_events.subscribe!(handler_b)

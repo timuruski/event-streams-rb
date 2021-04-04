@@ -11,7 +11,7 @@ class Subscription
     return self if @delivered_events.key?(event.id)
 
     @delivered_events[event.id] = event
-    @handler.handle(event)
+    @handler.receive(event)
 
     self
   end
