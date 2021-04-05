@@ -10,6 +10,9 @@ class Repository
     stream_topic = record_class.name
     @stream = EventStream.new(event_bus, topic: stream_topic)
     @stream.subscribe(self)
+
+    max_id = @records.keys.max.to_i + 1
+    @id_sequence = (max_id...).each
   end
 
   def read(record_id)
@@ -19,7 +22,7 @@ class Repository
   end
 
   def create(**attrs)
-    record = @record_class.new(**attrs, id: ID_SEQUENCE.next)
+    record = @record_class.new(**attrs, id: @id_sequence.next)
 
     create_event = Event.new(record.attrs, type: "create")
     @stream.publish(create_event)

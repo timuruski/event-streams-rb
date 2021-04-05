@@ -21,7 +21,6 @@ class EventBus
     end
   end
 
-  # TODO Handle fuzzy topics, eg. person:*
   def publish(event, topic:)
     with_topic(topic).publish(event)
   end

@@ -1,10 +1,8 @@
 class Event
-  ID_GENERATOR = (1..).each
-
   attr_reader :data, :id, :type
 
   def initialize(data = nil, type: nil)
-    @id = Event::ID_GENERATOR.next
+    @id = SecureRandom.uuid
     @data = data
     @type = type
   end
