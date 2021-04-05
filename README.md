@@ -2,6 +2,23 @@
 
 This is a repo for playing with event streams in Ruby.
 
+EventBus -> Topic -> Stream (
+
+EventBus:
+  - Organizes events into topics.
+  - Ordered sequence of events.
+  - De-duplicates produced events.
+
+EventStream:
+  - Can subscribe to a fuzzy topic.
+  - Maintains event cursor.
+
+Subscription:
+  - Joins a handler to an EventStream.
+  - De-duplicates received events.
+
+Should stream and subscription be joined?
+
 Stream (sequence of events) -> Topic (subset of events) -> Subscription (topic + handler)
 
 Stream, linear sequence of events, handles de-duplication.

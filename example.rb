@@ -2,29 +2,24 @@ require_relative "lib/ansi"
 require_relative "lib/events"
 
 event_bus = EventBus.new
+# event_bus.create_topic("simple_play")
 
-all_events = EventStream.new(event_bus)
-person_events = EventStream.new(event_bus, topic: "person:*")
-alice_events = EventStream.new(event_bus, topic: "person:alice")
-bob_events = EventStream.new(event_bus, topic: "person:bob")
+simple_play = EventStream.new(event_bus, topic: "simple_play")
 
-event_bus.publish(Event.new("Start of scene"), topic: "scene")
-
-event_bus.publish(Event.new("Alice enters"), topic: "person:alice")
-event_bus.publish(Event.new("Bob enters"), topic: "person:bob")
-event_bus.publish(Event.new("Alice greets Bob"), topic: ["person:alice", "person:bob"])
-event_bus.publish(Event.new("Midpoint of the scene"), topic: "scene")
-event_bus.publish(Event.new("Alice leaves"), topic: "person:alice")
-event_bus.publish(Event.new("Bob leaves"), topic: "person:bob")
+simple_play.publish(Event.new("Start of scene"))
+simple_play.publish(Event.new("Alice enters"))
+bob_enters = simple_play.publish(Event.new("Bob enters"))
+simple_play.publish(Event.new("Alice greets Bob"))
+simple_play.publish(Event.new("Midpoint of the scene"))
 
 handler_a = SimpleHandler.new { |event| puts Ansi["A: #{event.data}", :fg_red] }
 handler_b = SimpleHandler.new { |event| puts Ansi["B: #{event.data}", :fg_green] }
 handler_c = SimpleHandler.new { |event| puts Ansi["C: #{event.data}", :fg_blue] }
-handler_d = SimpleHandler.new { |event| puts Ansi["D: #{event.data}"] }
 
-alice_events.subscribe!(handler_a)
-bob_events.subscribe!(handler_b)
-person_events.subscribe!(handler_c)
-all_events.subscribe!(handler_d)
+simple_play.subscribe!(handler_a)
+simple_play.subscribe(handler_b)
+simple_play.subscribe(handler_c, last_event: bob_enters)
 
-event_bus.publish(Event.new("End of scene"), topic: "scene")
+simple_play.publish(Event.new("Alice leaves"))
+simple_play.publish(Event.new("Bob leaves"))
+simple_play.publish(Event.new("End of scene"))

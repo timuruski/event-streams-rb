@@ -17,7 +17,7 @@ class Subscription
   end
 
   def play_after(last_event)
-    @stream.each_after(last_event) do |event|
+    @stream.each(last_event: last_event) do |event|
       deliver(event)
     end
 

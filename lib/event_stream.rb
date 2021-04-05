@@ -1,16 +1,18 @@
 class EventStream
   attr_reader :event_bus, :topic
 
-  def initialize(event_bus, topic: nil)
+  def initialize(event_bus, topic:)
     @event_bus = event_bus
     @subscriptions = []
     @topic = topic
 
-    @event_bus.subscribe(self)
+    # Start listening to events from the bus.
+    @event_bus.create_topic(topic)
+    @event_bus.subscribe(self, topic: topic)
   end
 
-  def subscribe!(handler, last_event: nil)
-    subscription = subscribe(handler)
+  def subscribe(handler, last_event: nil)
+    subscription = subscribe!(handler)
 
     if last_event
       subscription.play_after(last_event)
@@ -19,7 +21,8 @@ class EventStream
     end
   end
 
-  def subscribe(handler, last_event: nil)
+  def subscribe!(handler, last_event: nil)
+    # Start delivering events to handler.
     subscription = Subscription.new(handler: handler, stream: self)
     @subscriptions.push(subscription)
 
@@ -30,7 +33,7 @@ class EventStream
     @subscriptions.delete(subscription)
   end
 
-  def deliver(event, topic)
+  def deliver(event)
     return unless topic_match?(topic)
 
     @subscriptions.each do |subscription|
@@ -39,12 +42,12 @@ class EventStream
   end
 
   # TODO Implement include_topic, and expansion
-  def publish(event, topic:)
-    @event_bus.publish(event, topic: topic)
+  def publish(event)
+    @event_bus.publish(event, topic: @topic)
   end
 
-  def each
-    @event_bus.each do |event, topic|
+  def each(last_event: nil, &block)
+    @event_bus.each(topic: @topic) do |event, topic|
       yield event if topic_match?(topic)
     end
   end

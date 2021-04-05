@@ -10,12 +10,14 @@ end
 user_repo = Repository.new(User, event_bus: event_bus)
 
 alice = user_repo.create(name: "Alice", email: "alice@example.org")
-other_alice = user_repo.read(alice.id)
 
-other_alice.email = "alice@hey.com"
-user_repo.update(other_alice)
+other_user_repo = Repository.new(User, event_bus: event_bus)
+other_alice = other_user_repo.read(alice.id)
 
 puts alice.email
 puts other_alice.email
+
+other_alice.email = "alice@hey.com"
+user_repo.update(other_alice)
 
 puts user_repo.read(alice.id).email

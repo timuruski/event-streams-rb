@@ -7,9 +7,9 @@ class Repository
     @record_class = record_class
     @records = {}
 
-    stream_topic = "#{record_class.name}:*"
+    stream_topic = record_class.name
     @stream = EventStream.new(event_bus, topic: stream_topic)
-    @stream.subscribe!(self)
+    @stream.subscribe(self)
   end
 
   def read(record_id)
@@ -22,28 +22,23 @@ class Repository
     record = @record_class.new(**attrs, id: ID_SEQUENCE.next)
 
     create_event = Event.new(record.attrs, type: "create")
-    @stream.publish(create_event, topic: topic_for(record))
+    @stream.publish(create_event)
 
     record
   end
 
   def update(record)
     update_event = Event.new(record.attrs, type: "update")
-    @stream.publish(update_event, topic: topic_for(record))
+    @stream.publish(update_event)
 
     record
   end
 
   def delete(record)
     delete_event = Event.new({id: record.id}, type: "delete")
-    @stream.publish(delete_event, topic: topic_for(record))
+    @stream.publish(delete_event)
 
     record
-  end
-
-  private def topic_for(record_id)
-    record_id = record_id.id if record_id.respond_to?(:id)
-    "#{@record_class.name}:#{record_id}"
   end
 
   def on_create(event)
