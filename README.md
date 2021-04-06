@@ -18,7 +18,7 @@ $ curl localhost:9292/users -d "name=Alice" -d "email=alice@example.org"
 $ curl localhost:9292/users/1
 > {"id":1,"email":"alice@example.org","name":"Alice"}
 
-$ curl -X delete localhost:9292/users/1
+$ curl -X DELETE localhost:9292/users/1
 > {"id":1,"email":"alice@example.org","name":"Alice"}
 
 $ curl localhost:9292/users/1
