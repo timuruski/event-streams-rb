@@ -4,15 +4,13 @@ class Repository
   attr_reader :stream
 
   def initialize(record_class, event_bus: EventBus.default)
+    @max_id = 0
+
     @record_class = record_class
     @records = {}
 
     @stream = EventStream.new(event_bus, topic: record_class.name)
     @stream.subscribe(self)
-
-    # TODO Read this on create
-    max_id = @records.keys.max.to_i + 1
-    @id_sequence = (max_id...).each
   end
 
   def read(record_id)
@@ -22,7 +20,7 @@ class Repository
   end
 
   def create(**attrs)
-    record = @record_class.new(**attrs, id: @id_sequence.next)
+    record = @record_class.new(**attrs, id: @max_id + 1)
 
     create_event = Event.new(record.attrs, type: "create")
     @stream.publish(create_event)
@@ -47,6 +45,8 @@ class Repository
   def on_create(event)
     record_id = event.data[:id]
     @records[record_id] = event.data
+
+    @max_id = record_id if record_id > @max_id
   end
 
   def on_update(event)
@@ -56,6 +56,6 @@ class Repository
 
   def on_delete(event)
     record_id = event.data[:id]
-    @records[record_id] = nil
+    @records.delete(record_id)
   end
 end
