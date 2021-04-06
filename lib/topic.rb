@@ -34,6 +34,10 @@ class Topic
     @published_events.key?(event.id)
   end
 
+  def to_a
+    @ordered_events.dup
+  end
+
   def each(last_event: nil)
     starting_index = last_event ? @published_events[last_event.id] + 1 : 0
     @ordered_events.slice(starting_index..).each do |event|

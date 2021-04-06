@@ -1,16 +1,16 @@
 class Repository
   include EventHandler
 
-  ID_SEQUENCE = (1..).each
+  attr_reader :stream
 
-  def initialize(record_class, event_bus:)
+  def initialize(record_class, event_bus: EventBus.default)
     @record_class = record_class
     @records = {}
 
-    stream_topic = record_class.name
-    @stream = EventStream.new(event_bus, topic: stream_topic)
+    @stream = EventStream.new(event_bus, topic: record_class.name)
     @stream.subscribe(self)
 
+    # TODO Read this on create
     max_id = @records.keys.max.to_i + 1
     @id_sequence = (max_id...).each
   end
@@ -56,6 +56,6 @@ class Repository
 
   def on_delete(event)
     record_id = event.data[:id]
-    @records.delete(record_id)
+    @records[record_id] = nil
   end
 end

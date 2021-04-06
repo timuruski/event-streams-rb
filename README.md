@@ -2,7 +2,28 @@
 
 This is a repo for playing with event streams in Ruby.
 
-EventBus -> Topic -> Stream (
+EventBus -> Topic -> Stream -> Handler
+Repository (handler) -> Stream -> Topic -> EventBus
+
+There is a tiny API server built on Sinatra:
+```
+$ rackup -D
+
+$ curl localhost:9292/users/1
+> Not found
+
+$ curl localhost:9292/users -d "name=Alice" -d "email=alice@example.org"
+> {"id":1,"email":"alice@example.org","name":"Alice"}
+
+$ curl localhost:9292/users/1
+> {"id":1,"email":"alice@example.org","name":"Alice"}
+
+$ curl -X delete localhost:9292/users/1
+> {"id":1,"email":"alice@example.org","name":"Alice"}
+
+$ curl localhost:9292/users/1
+> Not found
+```
 
 EventBus:
   - Organizes events into topics.

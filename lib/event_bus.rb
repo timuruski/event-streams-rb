@@ -1,4 +1,8 @@
 class EventBus
+  def self.default
+    @default ||= new
+  end
+
   def initialize
     @topics = {}
   end
@@ -27,6 +31,10 @@ class EventBus
 
   def each(topic:, last_event: nil, &block)
     with_topic(topic).each(last_event: last_event, &block)
+  end
+
+  def dump(topic:)
+    with_topic(topic).to_a
   end
 
   def topic?(name)
