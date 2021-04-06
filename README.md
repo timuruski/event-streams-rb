@@ -25,20 +25,20 @@ $ curl localhost:9292/users/1
 > Not found
 ```
 
+## Notes
+
 EventBus:
   - Organizes events into topics.
   - Ordered sequence of events.
   - De-duplicates produced events.
 
 EventStream:
-  - Can subscribe to a fuzzy topic.
+  - Filters events from a specific topic.
   - Maintains event cursor.
 
 Subscription:
   - Joins a handler to an EventStream.
   - De-duplicates received events.
-
-Should stream and subscription be joined?
 
 Stream (sequence of events) -> Topic (subset of events) -> Subscription (topic + handler)
 

@@ -1,10 +1,7 @@
 require_relative "lib/ansi"
 require_relative "lib/events"
 
-event_bus = EventBus.new
-# event_bus.create_topic("simple_play")
-
-simple_play = EventStream.new(event_bus, topic: "simple_play")
+simple_play = EventStream.new(EventBus.default, topic: "simple_play")
 
 simple_play.publish(Event.new("Start of scene"))
 simple_play.publish(Event.new("Alice enters"))

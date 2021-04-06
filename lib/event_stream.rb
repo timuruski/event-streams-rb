@@ -7,7 +7,6 @@ class EventStream
     @topic = topic
 
     # Start listening to events from the bus.
-    @event_bus.create_topic(topic)
     @event_bus.subscribe(self, topic: topic)
   end
 

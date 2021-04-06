@@ -2,8 +2,6 @@ require_relative "lib/ansi"
 require_relative "lib/events"
 require 'pry'
 
-# event_bus = EventBus.new
-
 class User < Struct.new(:id, :email, :name, keyword_init: true)
   alias_method :attrs, :to_h
 end

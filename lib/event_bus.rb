@@ -7,10 +7,6 @@ class EventBus
     @topics = {}
   end
 
-  def create_topic(name)
-    @topics[name] ||= Topic.new(name)
-  end
-
   def subscribe(listener, topic:)
     with_topic(topic).subscribe(listener)
   end
@@ -37,13 +33,7 @@ class EventBus
     with_topic(topic).to_a
   end
 
-  def topic?(name)
-    @topics.key?(name)
-  end
-
   private def with_topic(name)
-    raise ArgumentError, "topic #{name} is not defined" unless topic?(name)
-
-    @topics.fetch(name)
+    @topics[name] ||= Topic.new(name)
   end
 end
