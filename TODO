@@ -1,0 +1,5 @@
+- Persist event stream to a file
+- Persist repositories into database
+- Link dependent records with aggregate root
+- Fold entity state over events
+- Build a minimal message board

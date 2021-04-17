@@ -1,8 +1,8 @@
 require "bundler/setup"
 require "json"
 require "sinatra"
-require "pry"
 require "sinatra/reloader" if development?
+require "pry"
 
 require_relative "events"
 require_relative "user"
@@ -16,6 +16,11 @@ class App < Sinatra::Application
     def user_repo
       @user_repo ||= Repository.new(User)
     end
+  end
+
+  get "/users" do
+    users = user_repo.list
+    JSON.generate(users: users)
   end
 
   post "/users" do

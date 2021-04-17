@@ -17,8 +17,8 @@ class Topic
   end
 
   def publish(event)
-    # TODO What to return if event is already published?
-    return if published?(event)
+    # TODO Does a producer need to know if an event is already published?
+    return event if published?(event)
 
     @published_events[event.id] = @ordered_events.length
     @ordered_events << event
