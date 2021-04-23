@@ -25,10 +25,17 @@ class EventBus
     with_topic(topic).publish(event)
   end
 
-  def each(topic:, last_event: nil, &block)
+  def each_for(topic:, last_event: nil, &block)
     with_topic(topic).each(last_event: last_event, &block)
   end
 
+  def each(&block)
+    @topics.keys.each do |topic|
+      with_topic(topic).each(&block)
+    end
+  end
+
+  # For debugging events
   def dump(topic:)
     with_topic(topic).to_a
   end

@@ -46,7 +46,7 @@ class EventStream
   end
 
   def each(last_event: nil, &block)
-    @event_bus.each(topic: @topic) do |event, topic|
+    @event_bus.each_for(topic: @topic) do |event, topic|
       yield event if topic_match?(topic)
     end
   end

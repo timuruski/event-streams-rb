@@ -3,3 +3,12 @@
 - Link dependent records with aggregate root
 - Fold entity state over events
 - Build a minimal message board
+  Modeled on lobste.rs
+    GET /recent Paginated list of stories by posting date
+    GET /stories/new Form to post a new story
+    POST /stories Create a new story
+    GET /stories/:id View a story and comments
+    POST /comments Add a comment to a story
+    GET /users/new Form to create a new user
+    POST /users Create a new user
+    GET /users/:id View posts by user
