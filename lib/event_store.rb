@@ -1,42 +1,25 @@
-# TODO Use YAML::Store instead; write events immediately?
+require "yaml/store"
+
 class EventStore
-  def initialize(path, event_bus: EventBus.default)
-    @path = path
-    @event_bus = event_bus
+  def initialize(path, event_bus: nil)
+    @event_bus = event_bus || EventBus.default
+    @store = YAML::Store.new(path)
 
-    yield self if block_given?
-  end
-
-  # NOTE This is naive and leans on YAML coercing to instances of Event
-  def load
-    YAML.load(File.read(@path)).each do |topic, events|
-      events.each do |event|
-        @event_bus.publish(event, topic: topic)
+    # Load events before tapping to avoid recursion
+    @store.transaction do
+      @store.roots.each do |topic|
+        @store[topic].each do |event|
+          @event_bus.publish(event, topic: topic)
+        end
       end
     end
 
-    self
-  end
-
-  def dump_at_exit
-    at_exit do
-      # Don't dump on a crash; might be a bad idea.
-      self.dump unless $!
+    # Persist events as they are published
+    @event_bus.tap_events do |topic, event|
+      @store.transaction do
+        @store[topic] ||= []
+        @store[topic] << event
+      end
     end
-
-    self
-  end
-
-  def dump
-    events = {}
-
-    @event_bus.each do |event, topic|
-      events[topic] ||= []
-      events[topic] << event
-    end
-
-    File.write(@path, YAML.dump(events))
-
-    self
   end
 end

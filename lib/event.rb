@@ -1,3 +1,5 @@
+require "securerandom"
+
 class Event
   attr_reader :data, :id, :type
 

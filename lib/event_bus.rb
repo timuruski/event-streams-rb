@@ -4,6 +4,7 @@ class EventBus
   end
 
   def initialize
+    @taps = []
     @topics = {}
   end
 
@@ -23,6 +24,13 @@ class EventBus
 
   def publish(event, topic:)
     with_topic(topic).publish(event)
+
+    # TODO Redesign topics to support "all"
+    @taps.each do |block|
+      block.yield(topic, event)
+    end
+
+    event
   end
 
   def each_for(topic:, last_event: nil, &block)
@@ -38,6 +46,10 @@ class EventBus
   # For debugging events
   def dump(topic:)
     with_topic(topic).to_a
+  end
+
+  def tap_events(&block)
+    @taps << block
   end
 
   private def with_topic(name)

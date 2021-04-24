@@ -1,8 +1,6 @@
 # NOTE None of this is thread-safe.
 #
 # Event -> Stream (topic) -> Bus -> Stream (topic) -> Subscription -> Handler
-require "securerandom"
-require "yaml"
 
 $LOAD_PATH.unshift(__dir__)
 
