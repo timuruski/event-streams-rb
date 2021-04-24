@@ -1,11 +1,15 @@
-require "bundler/setup"
 require "json"
+
+require "bundler/setup"
+require "pry"
 require "sinatra"
 require "sinatra/reloader" if development?
-require "pry"
 
-require_relative "events"
-require_relative "user"
+require_relative "lib/events"
+require_relative "app/user"
+
+# Persist event stream between runs
+EventStore.new("./events.yml", event_bus: EventBus.default)
 
 class App < Sinatra::Application
   helpers do
