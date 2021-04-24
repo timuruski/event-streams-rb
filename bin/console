@@ -2,7 +2,8 @@
 
 require "irb"
 require_relative "../lib/events"
-require_relative "../lib/user"
+require_relative "../app/story"
+require_relative "../app/user"
 
 ARGV.clear
 IRB.start

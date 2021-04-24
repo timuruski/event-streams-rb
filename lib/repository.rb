@@ -28,7 +28,7 @@ class Repository
     end
   end
 
-  def create(**attrs)
+  def create(attrs)
     record = @record_class.new(**attrs, id: @max_id + 1)
 
     create_event = Event.new(record.attrs, type: "created_#{@record_type}")

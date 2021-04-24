@@ -1,4 +1,4 @@
-class User < Struct.new(:id, :email, :name, keyword_init: true)
+class Story < Struct.new(:id, :text, :title, :url, keyword_init: true)
   alias_method :attrs, :to_h
 
   def assign_attrs(attrs)
